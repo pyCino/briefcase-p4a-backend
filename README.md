@@ -15,14 +15,14 @@
 ## Installation
 
 ```bash
-pip install briefcase-p4a-backend
+pip install git+https://github.com/pyCino/briefcase-p4a-backend.git
 ```
 
 ## Quick Start
 
 1. **Create a new Briefcase project:**
    ```bash
-   briefcase new -t https://github.com/pyCino/briefcase-p4a-template.git
+   briefcase new -t https://github.com/pyCino/briefcase-p4a-template.git --template-branch main
    ```
 
 2. **Build Android APK using P4A:**
