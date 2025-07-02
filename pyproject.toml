@@ -1,0 +1,133 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "briefcase-p4a-backend"
+version = "1.0.0"
+description = "Python-for-Android (P4A) backend for Briefcase"
+readme = "README.md"
+authors = [
+    {name = "Al pyCino", email = "thealpycino@gmail.com"}
+]
+maintainers = [
+    {name = "Al pyCino", email = "thealpycino@gmail.com"}
+]
+license = "MIT"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Software Distribution",
+    "Topic :: Mobile Development",
+    "Topic :: System :: Archiving :: Packaging",
+]
+keywords = [
+    "briefcase",
+    "python-for-android",
+    "p4a",
+    "android",
+    "apk",
+    "mobile",
+    "packaging",
+    "build-tools",
+    "cross-platform"
+]
+dependencies = [
+    "briefcase>=0.3.23",
+    "python-for-android>=2024.1.21",
+    "cookiecutter>=2.0.0",
+    "cython>=0.29.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+docs = [
+    "sphinx>=5.0.0",
+    "sphinx-rtd-theme>=1.0.0",
+    "myst-parser>=0.18.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/pyCino/briefcase-p4a-backend"
+Documentation = "https://github.com/pyCino/briefcase-p4a-backend#readme"
+Repository = "https://github.com/pyCino/briefcase-p4a-backend.git"
+Issues = "https://github.com/pyCino/briefcase-p4a-backend/issues"
+Changelog = "https://github.com/pyCino/briefcase-p4a-backend/blob/main/CHANGELOG.md"
+
+[project.entry-points."briefcase.formats.android"]
+p4a = "briefcase_p4a_backend"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["briefcase_p4a_backend*"]
+
+[tool.setuptools.package-dir]
+"briefcase_p4a_backend" = "briefcase_p4a_backend"
+
+[tool.setuptools.package-data]
+briefcase_p4a_backend = ["py.typed"]
+
+# Development tools configuration
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=briefcase_p4a_backend",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+] 

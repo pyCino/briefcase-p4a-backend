@@ -1,0 +1,32 @@
+# Development requirements for briefcase-p4a-backend
+# Author: Al pyCino <thealpycino@gmail.com>
+
+# Core dependencies
+briefcase>=0.3.23
+python-for-android>=2024.1.21
+cookiecutter>=2.0.0
+cython>=0.29.0
+
+# PyJNIus master branch for Python 3.13 compatibility
+# This is required for Python 3.13 users to avoid build errors
+git+https://github.com/kivy/pyjnius.git
+
+# Development tools
+pytest>=7.0.0
+pytest-cov>=4.0.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0
+
+# Documentation
+sphinx>=5.0.0
+sphinx-rtd-theme>=1.0.0
+myst-parser>=0.18.0
+
+# Build tools
+build>=0.10.0
+twine>=4.0.0
+
+# Testing with Android
+# Note: These are optional and only needed for full Android testing
+ 
