@@ -45,7 +45,7 @@ DEFAULT_NDK_VERSION = "25.2.9519653"
 class P4AMixin:
     output_format = "p4a"
     platform = "android"
-    platform_target_version = "0.3.24"
+    platform_target_version = "0.3.23"
 
     @property
     def packaging_formats(self):
