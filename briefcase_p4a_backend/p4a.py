@@ -277,7 +277,17 @@ After installation, the NDK should be available at:
         args.extend(["--name", app.formal_name])
         args.extend(["--version", app.version])
         
-        # TODO: Add requirements handling - for now let P4A use defaults
+        # Collect requirements from app configuration
+        requirements = ["python3"]  # P4A always needs python3
+        
+        # Add app requirements (Briefcase merges base + platform-specific)
+        if hasattr(app, 'requires') and app.requires:
+            requirements.extend(app.requires)
+        
+        # Convert requirements list to P4A format (comma-separated)
+        if requirements:
+            requirements_str = ",".join(str(req) for req in requirements)
+            args.extend(["--requirements", requirements_str])
             
         if release_mode:
             args.append("--release")
