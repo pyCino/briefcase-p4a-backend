@@ -89,33 +89,23 @@ class P4AMixin:
         # Get SDK root
         sdk_root = self.tools.android_sdk.root_path
         
-        # Add SDK tools to PATH so P4A can execute them
-        sdk_tool_paths = []
-        
-        # Find cmdline-tools version directory (contains sdkmanager)
+        # P4A expects cmdline-tools/latest/bin/ but Briefcase uses version directories
+        # Create symlink from 'latest' to actual version directory so P4A can find tools
         cmdline_tools = sdk_root / "cmdline-tools"
         if cmdline_tools.exists():
-            for version_dir in cmdline_tools.iterdir():
-                if version_dir.is_dir():
-                    bin_dir = version_dir / "bin"
-                    if bin_dir.exists():
-                        sdk_tool_paths.append(str(bin_dir))
+            latest_link = cmdline_tools / "latest"
+            if not latest_link.exists():
+                # Find the actual version directory
+                for version_dir in cmdline_tools.iterdir():
+                    if version_dir.is_dir() and version_dir.name != "latest":
+                        # Create symlink from latest to version directory
+                        latest_link.symlink_to(version_dir.name)
                         break
-        
-        # Add platform-tools (contains adb)
-        platform_tools = sdk_root / "platform-tools"
-        if platform_tools.exists():
-            sdk_tool_paths.append(str(platform_tools))
-        
-        # Add tools to PATH so P4A can execute them
-        if sdk_tool_paths:
-            existing_path = env.get("PATH", "")
-            env["PATH"] = ":".join(sdk_tool_paths + [existing_path])
         
         # Build P4A command with SDK/NDK arguments
         p4a_args = ["p4a"] + args
         
-        # Tell P4A where the SDK structure is AND make tools executable via PATH
+        # Tell P4A where the SDK structure is - it will find tools at expected locations
         p4a_args.extend(["--sdk-dir", str(sdk_root)])
         
         # Add API versions
