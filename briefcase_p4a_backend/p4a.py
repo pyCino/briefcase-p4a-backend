@@ -82,10 +82,61 @@ class P4AMixin:
         :param args: The p4a command arguments
         """
         env = os.environ.copy()
+        
+        # Add Briefcase Android SDK environment 
         env.update(self.tools.android_sdk.env)
         
+        # Get SDK root
+        sdk_root = self.tools.android_sdk.root_path
+        
+        # Add SDK tools to PATH so P4A can execute them
+        sdk_tool_paths = []
+        
+        # Find cmdline-tools version directory (contains sdkmanager)
+        cmdline_tools = sdk_root / "cmdline-tools"
+        if cmdline_tools.exists():
+            for version_dir in cmdline_tools.iterdir():
+                if version_dir.is_dir():
+                    bin_dir = version_dir / "bin"
+                    if bin_dir.exists():
+                        sdk_tool_paths.append(str(bin_dir))
+                        break
+        
+        # Add platform-tools (contains adb)
+        platform_tools = sdk_root / "platform-tools"
+        if platform_tools.exists():
+            sdk_tool_paths.append(str(platform_tools))
+        
+        # Add tools to PATH so P4A can execute them
+        if sdk_tool_paths:
+            existing_path = env.get("PATH", "")
+            env["PATH"] = ":".join(sdk_tool_paths + [existing_path])
+        
+        # Build P4A command with SDK/NDK arguments
+        p4a_args = ["p4a"] + args
+        
+        # Tell P4A where the SDK structure is AND make tools executable via PATH
+        p4a_args.extend(["--sdk-dir", str(sdk_root)])
+        
+        # Add API versions
+        android_api = str(getattr(app, 'android_sdk_version', '33'))
+        ndk_api = str(getattr(app, 'android_min_sdk_version', '21'))
+        p4a_args.extend(["--android-api", android_api])
+        p4a_args.extend(["--ndk-api", ndk_api])
+        
+        # Add NDK path and version if available
+        ndk_path = sdk_root / "ndk"
+        if ndk_path.exists():
+            # Find the installed NDK version
+            ndk_versions = [d.name for d in ndk_path.iterdir() if d.is_dir() and d.name[0].isdigit()]
+            if ndk_versions:
+                ndk_versions.sort(key=lambda v: tuple(map(int, v.split('.'))))
+                selected_ndk = ndk_versions[-1]
+                p4a_args.extend(["--ndk-dir", str(ndk_path / selected_ndk)])
+                p4a_args.extend(["--ndk-version", selected_ndk])
+        
         self.tools.subprocess.run(
-            ["p4a"] + args,
+            p4a_args,
             env=env,
             cwd=self.bundle_path(app),
             check=True,
