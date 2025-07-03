@@ -102,6 +102,34 @@ class P4AMixin:
                         latest_link.symlink_to(version_dir.name)
                         break
         
+        # Ensure required Android API is installed
+        android_api = self.tools.android_sdk.android_api
+        platforms_dir = sdk_root / "platforms"
+        api_platform_dir = platforms_dir / f"android-{android_api}"
+        
+        # Get sdkmanager path for installation operations
+        sdkmanager_path = cmdline_tools / "latest" / "bin" / "sdkmanager"
+        
+        if not api_platform_dir.exists():
+            # Install the required Android API platform using sdkmanager
+            if sdkmanager_path.exists():
+                self.tools.subprocess.run(
+                    [str(sdkmanager_path), f"platforms;android-{android_api}"],
+                    check=True,
+                    env=env
+                )
+                
+        # Also ensure build-tools are installed
+        build_tools_dir = sdk_root / "build-tools"
+        if not build_tools_dir.exists() or not any(build_tools_dir.iterdir()):
+            # Install latest build-tools
+            if sdkmanager_path.exists():
+                self.tools.subprocess.run(
+                    [str(sdkmanager_path), "build-tools;34.0.0"],
+                    check=True,
+                    env=env
+                )
+        
         # Build P4A command with SDK/NDK arguments
         p4a_args = ["p4a"] + args
         
