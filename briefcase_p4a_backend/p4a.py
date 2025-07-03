@@ -82,15 +82,162 @@ class P4AMixin:
         :param args: The p4a command arguments
         """
         env = os.environ.copy()
+        
+        # Add Briefcase Android SDK environment 
         env.update(self.tools.android_sdk.env)
         
+        # Get SDK root
+        sdk_root = self.tools.android_sdk.root_path
+        
+        # P4A expects cmdline-tools/latest/bin/ but Briefcase uses version directories
+        # Create symlink from 'latest' to actual version directory so P4A can find tools
+        cmdline_tools = sdk_root / "cmdline-tools"
+        if cmdline_tools.exists():
+            latest_link = cmdline_tools / "latest"
+            if not latest_link.exists():
+                # Find the actual version directory
+                for version_dir in cmdline_tools.iterdir():
+                    if version_dir.is_dir() and version_dir.name != "latest":
+                        # Create symlink from latest to version directory
+                        latest_link.symlink_to(version_dir.name)
+                        break
+        
+        # Ensure required Android SDK packages are installed
+        android_api = str(getattr(app, 'android_sdk_version', '33'))
+        self._ensure_android_sdk_packages(android_api, env)
+        
+        # Build P4A command with SDK/NDK arguments
+        p4a_args = ["p4a"] + args
+        
+        # Tell P4A where the SDK structure is - it will find tools at expected locations
+        p4a_args.extend(["--sdk-dir", str(sdk_root)])
+        
+        # Add API versions
+        ndk_api = str(getattr(app, 'android_min_sdk_version', '21'))
+        p4a_args.extend(["--android-api", android_api])
+        p4a_args.extend(["--ndk-api", ndk_api])
+        
+        # Add NDK path and version if available
+        ndk_path = sdk_root / "ndk"
+        if ndk_path.exists():
+            # Find the installed NDK version
+            ndk_versions = [d.name for d in ndk_path.iterdir() if d.is_dir() and d.name[0].isdigit()]
+            if ndk_versions:
+                ndk_versions.sort(key=lambda v: tuple(map(int, v.split('.'))))
+                selected_ndk = ndk_versions[-1]
+                p4a_args.extend(["--ndk-dir", str(ndk_path / selected_ndk)])
+                p4a_args.extend(["--ndk-version", selected_ndk])
+        
         self.tools.subprocess.run(
-            ["p4a"] + args,
+            p4a_args,
             env=env,
             cwd=self.bundle_path(app),
             check=True,
             encoding=self.tools.system_encoding,
         )
+
+    def _ensure_android_sdk_packages(self, android_api: str, env: dict):
+        """Ensure required Android SDK packages are installed.
+        
+        :param android_api: The Android API level (e.g., '33')
+        :param env: Environment variables for subprocess
+        """
+        sdk_root = self.tools.android_sdk.root_path
+        sdkmanager_path = self.tools.android_sdk.sdkmanager_path
+        
+        # Check if required packages are installed
+        platforms_dir = sdk_root / "platforms" / f"android-{android_api}"
+        build_tools_dir = sdk_root / "build-tools"
+        ndk_dir = sdk_root / "ndk"
+        
+        packages_to_install = []
+        
+        # Check Android platform
+        if not platforms_dir.exists():
+            packages_to_install.append(f"platforms;android-{android_api}")
+            self.tools.console.info(
+                f"Android API {android_api} platform not found - will be installed automatically"
+            )
+        
+        # Check build-tools (find latest available version for this API)
+        needs_build_tools = False
+        if not build_tools_dir.exists():
+            needs_build_tools = True
+        else:
+            # Check if we have any build-tools that work with this API level
+            api_int = int(android_api)
+            compatible_tools = []
+            for tool_dir in build_tools_dir.iterdir():
+                if tool_dir.is_dir():
+                    try:
+                        tool_version = tool_dir.name.split('.')[0]
+                        if int(tool_version) >= api_int:
+                            compatible_tools.append(tool_dir.name)
+                    except (ValueError, IndexError):
+                        continue
+            
+            if not compatible_tools:
+                needs_build_tools = True
+        
+        if needs_build_tools:
+            # Use build-tools version that matches or is close to API level
+            api_int = int(android_api)
+            if api_int >= 33:
+                build_tools_version = "33.0.2"
+            elif api_int >= 32:
+                build_tools_version = "32.0.0"
+            elif api_int >= 31:
+                build_tools_version = "31.0.0"
+            else:
+                build_tools_version = "30.0.3"
+            
+            packages_to_install.append(f"build-tools;{build_tools_version}")
+            self.tools.console.info(
+                f"Compatible build-tools not found - will install {build_tools_version}"
+            )
+        
+        # Check Android NDK
+        needs_ndk = False
+        if not ndk_dir.exists():
+            needs_ndk = True
+        else:
+            # Check if we have any NDK versions installed
+            ndk_versions = [d.name for d in ndk_dir.iterdir() if d.is_dir() and d.name[0].isdigit()]
+            if not ndk_versions:
+                needs_ndk = True
+        
+        if needs_ndk:
+            packages_to_install.append(f"ndk;{DEFAULT_NDK_VERSION}")
+            self.tools.console.info(
+                f"Android NDK not found - will install {DEFAULT_NDK_VERSION}"
+            )
+        
+        # Install missing packages
+        if packages_to_install:
+            self.tools.console.info(
+                f"Installing required Android SDK packages: {', '.join(packages_to_install)}"
+            )
+            try:
+                self.tools.subprocess.run(
+                    [str(sdkmanager_path)] + packages_to_install,
+                    env=env,
+                    check=True,
+                    encoding=self.tools.system_encoding,
+                )
+                self.tools.console.info("Android SDK packages installed successfully")
+            except subprocess.CalledProcessError as e:
+                raise BriefcaseCommandError(
+                    f"""
+Failed to install required Android SDK packages: {', '.join(packages_to_install)}
+
+Error: {e}
+
+You may need to:
+1. Check your internet connection
+2. Accept SDK licenses: {sdkmanager_path} --licenses
+3. Manually install packages: {sdkmanager_path} {' '.join(packages_to_install)}
+"""
+                )
 
     def verify_tools(self):
         """Verify that all required external tools are available."""
@@ -277,10 +424,23 @@ After installation, the NDK should be available at:
         args.extend(["--name", app.formal_name])
         args.extend(["--version", app.version])
         
-        # Add requirements from app.requires
+        # Collect requirements from app configuration
+        requirements = ["python3"]  # P4A always needs python3
+        
+        # Add app requirements (Briefcase merges base + platform-specific)
         if hasattr(app, 'requires') and app.requires:
-            requirements = ",".join(app.requires)
-            args.extend(["--requirements", requirements])
+            requirements.extend(app.requires)
+        
+        # Convert requirements list to P4A format (comma-separated)
+        if requirements:
+            requirements_str = ",".join(str(req) for req in requirements)
+            args.extend(["--requirements", requirements_str])
+        
+        # Add Android architectures (P4A requires at least one)
+        # Use modern Android architectures by default
+        archs = getattr(app, 'android_archs', ['armeabi-v7a', 'arm64-v8a'])
+        for arch in archs:
+            args.extend(["--arch", arch])
             
         if release_mode:
             args.append("--release")
