@@ -270,18 +270,14 @@ After installation, the NDK should be available at:
     def _build_apk(self, app: AppConfig, release_mode: bool = False):
         """Build the APK for the given app."""
         
-        p4a_config = app.p4a or {}
-        
         args = ["--private", self.bundle_path(app) / "src"]
         
-        if "package" in p4a_config:
-            args.extend(["--package", p4a_config["package"]])
-        if "name" in p4a_config:
-            args.extend(["--name", p4a_config["name"]])
-        if "version" in p4a_config:
-            args.extend(["--version", p4a_config["version"]])
-        if "requirements" in p4a_config:
-            args.extend(["--requirements", p4a_config["requirements"]])
+        # Use standard app configuration
+        args.extend(["--package", app.bundle])
+        args.extend(["--name", app.formal_name])
+        args.extend(["--version", app.version])
+        
+        # TODO: Add requirements handling - for now let P4A use defaults
             
         if release_mode:
             args.append("--release")
