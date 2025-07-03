@@ -288,6 +288,12 @@ After installation, the NDK should be available at:
         if requirements:
             requirements_str = ",".join(str(req) for req in requirements)
             args.extend(["--requirements", requirements_str])
+        
+        # Add Android architectures (P4A requires at least one)
+        # Use modern Android architectures by default
+        archs = getattr(app, 'android_archs', ['armeabi-v7a', 'arm64-v8a'])
+        for arch in archs:
+            args.extend(["--arch", arch])
             
         if release_mode:
             args.append("--release")
