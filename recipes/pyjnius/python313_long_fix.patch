@@ -1,0 +1,40 @@
+diff --git a/jnius/jnius_conversion.pxi b/jnius/jnius_conversion.pxi
+index 2e0b48d8..464c75d6 100644
+--- a/jnius/jnius_conversion.pxi
++++ b/jnius/jnius_conversion.pxi
+@@ -38,6 +38,7 @@ cdef void populate_args(JNIEnv *j_env, tuple definition_args, jvalue *j_args, ar
+     cdef JavaClass jc
+     cdef PythonJavaClass pc
+     cdef int index
++    from ctypes import c_long as long
+ 
+     for index, argtype in enumerate(definition_args):
+         py_arg = args[index]
+@@ -467,6 +468,7 @@ cdef jobject convert_python_to_jobject(JNIEnv *j_env, definition, obj) except *:
+     cdef JavaClassStorage jcs
+     cdef PythonJavaClass pc
+     cdef int index
++    from ctypes import c_long as long
+ 
+     if definition[0] == 'V':
+         return NULL
+@@ -632,6 +634,7 @@ cdef jobject convert_pyarray_to_java(JNIEnv *j_env, definition, pyarray) except
+     cdef jclass j_class
+     cdef JavaObject jo
+     cdef JavaClass jc
++    from ctypes import c_long as long
+ 
+     cdef ByteArray a_bytes
+ 
+diff --git a/jnius/jnius_utils.pxi b/jnius/jnius_utils.pxi
+index 381d4b05..96591322 100644
+--- a/jnius/jnius_utils.pxi
++++ b/jnius/jnius_utils.pxi
+@@ -278,6 +278,7 @@ cdef int calculate_score(sign_args, args, is_varargs=False) except *:
+     cdef JavaClass jc
+     cdef int args_len = len(args)
+     cdef int sign_args_len = len(sign_args)
++    from ctypes import c_long as long
+ 
+     if args_len != sign_args_len and not is_varargs:
+         # if the number of arguments expected is not the same 

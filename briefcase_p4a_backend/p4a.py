@@ -128,6 +128,23 @@ class P4AMixin:
                 p4a_args.extend(["--ndk-dir", str(ndk_path / selected_ndk)])
                 p4a_args.extend(["--ndk-version", selected_ndk])
         
+        # Add custom recipes for Python 3.13+ compatibility
+        if sys.version_info >= (3, 13):
+            from pathlib import Path
+            recipes_dir = Path(__file__).parent.parent / "recipes"
+            if recipes_dir.exists():
+                p4a_args.extend(["--local-recipes", str(recipes_dir)])
+                self.tools.console.info(
+                    f"Using local recipes from: {recipes_dir}",
+                    prefix="P4A"
+                )
+        
+        # Echo the full P4A command for debugging
+        self.tools.console.info(
+            f"Executing P4A command: {' '.join(str(arg) for arg in p4a_args)}",
+            prefix="P4A"
+        )
+        
         self.tools.subprocess.run(
             p4a_args,
             env=env,
@@ -135,6 +152,8 @@ class P4AMixin:
             check=True,
             encoding=self.tools.system_encoding,
         )
+
+
 
     def _ensure_android_sdk_packages(self, android_api: str, env: dict):
         """Ensure required Android SDK packages are installed.
@@ -269,11 +288,7 @@ Potential pyjnius compatibility issue detected:
 - Python version: {python_version.major}.{python_version.minor}.{python_version.micro}
 - Installed pyjnius: {installed_version}
 
-For Python 3.13+, you may need the latest pyjnius from master branch.
-The backend will automatically use the correct version for APK builds,
-but your development environment might need:
-
-    pip install git+https://github.com/kivy/pyjnius.git
+For Python 3.13+, you properly need a patched version of pyjnius.
 
 """,
                     prefix="Python 3.13"
@@ -498,11 +513,8 @@ class P4ACreateCommand(P4AMixin, CreateCommand):
         return {
             **super().output_format_template_context(app),
             **self.permissions_context(app, x_permissions),
-            "pyjnius_requirement": (
-                "git+https://github.com/kivy/pyjnius.git" 
-                if is_python_313_plus 
-                else "pyjnius>=1.4.1"
-            )
+            "pyjnius_requirement":  
+                "pyjnius>=1.6.1"
         }
 
     def generate_app_template(self, app: AppConfig):

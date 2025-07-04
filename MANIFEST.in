@@ -4,6 +4,8 @@ include CHANGELOG.md
 include pyproject.toml
 recursive-include briefcase_p4a_backend *.py
 recursive-include briefcase_p4a_backend *.typed
+recursive-include recipes *.py
+recursive-include recipes *.patch
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 recursive-exclude * *.egg-info 

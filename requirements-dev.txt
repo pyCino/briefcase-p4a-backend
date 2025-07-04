@@ -7,10 +7,6 @@ python-for-android>=2024.1.21
 cookiecutter>=2.0.0
 cython>=0.29.0
 
-# PyJNIus master branch for Python 3.13 compatibility
-# This is required for Python 3.13 users to avoid build errors
-git+https://github.com/kivy/pyjnius.git
-
 # Development tools
 pytest>=7.0.0
 pytest-cov>=4.0.0
